@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using week5.Models;
+
 using week5.Services;
 
 namespace week5.Controllers;
@@ -13,10 +16,19 @@ public class EmployeeController : ControllerBase
 { 
 
     private readonly EmployeeServices employeeDetailsService;
-    IList<EmployeeDetails> Employee { get; set; }
-    public EmployeeController(EmployeeServices EmployeeService)
+    private readonly IMongoCollection<EmployeeDetails> Employees;
+    public EmployeeController(EmployeeServices EmployeeService, IOptions<EmployeeDetailsSettings> employeeDetailsSettings)
     {
         employeeDetailsService = EmployeeService;
+        var mongoClient = new MongoClient(
+                employeeDetailsSettings.Value.ConnectionString);
+
+        var mongoDatabase = mongoClient.GetDatabase(
+            employeeDetailsSettings.Value.DatabaseName);
+
+        Employees = mongoDatabase.GetCollection<EmployeeDetails>(
+            employeeDetailsSettings.Value.EmployeeCollectionName);
+
     }
 
     [HttpGet]
@@ -24,7 +36,7 @@ public class EmployeeController : ControllerBase
         await employeeDetailsService.GetAsync();
 
     [HttpGet("{id:length(24)}")]
-    public async Task<ActionResult<EmployeeDetails>> Get(ObjectId id)
+    public async Task<ActionResult<EmployeeDetails>> Get(string id)
     {
         var employee = await employeeDetailsService.GetAsync(id);
 
@@ -45,8 +57,9 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpPut("{id:length(24)}")]
-    public async Task<IActionResult> Update(ObjectId id, EmployeeDetails UpdatedEmployee)
+    public async Task<IActionResult> Update(string id, EmployeeDetails UpdatedEmployee)
     {
+       
         var employee = await employeeDetailsService.GetAsync(id);
 
         if (employee is null)
@@ -61,18 +74,22 @@ public class EmployeeController : ControllerBase
         return NoContent();
     }
     [HttpPatch("{id:length(24)}")]
-    public  IActionResult UpdatePartial(ObjectId id,[FromBody] JsonPatchDocument<EmployeeDetails> PartialUpdatedEmployee)
+    public async Task<IActionResult> UpdatePatch(string id, [FromBody] JsonPatchDocument<EmployeeDetails> PartialUpdatedEmployee)
     {
-        var entity = Employee.FirstOrDefault(s => s.Id == id);
+       
+        var entity = await Employees.Find(x => x.Id == id).FirstOrDefaultAsync();
         if (entity == null)
-           return NotFound();
-        PartialUpdatedEmployee.ApplyTo(entity,ModelState);
+        {
+            return NotFound();
+        }
+        PartialUpdatedEmployee.ApplyTo(entity, ModelState);
+
         return Ok();
 
     }
 
     [HttpDelete("{id:length(24)}")]
-    public async Task<IActionResult> Delete(ObjectId id)
+    public async Task<IActionResult> Delete(string id)
     {
         var employee = await employeeDetailsService.GetAsync(id);
 
