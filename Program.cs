@@ -5,7 +5,7 @@ using week5;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<EmployeeDetailsSettings>(
-builder.Configuration.GetSection("EmployeeDB"));
+builder.Configuration.GetSection("EmployeeDatabase"));
 builder.Services.AddSingleton<EmployeeServices>();
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddControllers(options =>
