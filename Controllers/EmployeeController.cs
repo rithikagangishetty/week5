@@ -13,7 +13,7 @@ namespace week5.Controllers;
 [Route("api/[controller]")]
 public class EmployeeController : ControllerBase
 
-{ 
+{
 
     private readonly EmployeeServices employeeDetailsService;
     private readonly IMongoCollection<EmployeeDetails> Employees;
@@ -59,7 +59,7 @@ public class EmployeeController : ControllerBase
     [HttpPut("{id:length(24)}")]
     public async Task<IActionResult> Update(string id, EmployeeDetails UpdatedEmployee)
     {
-       
+
         var employee = await employeeDetailsService.GetAsync(id);
 
         if (employee is null)
@@ -76,7 +76,7 @@ public class EmployeeController : ControllerBase
     [HttpPatch("{id:length(24)}")]
     public async Task<IActionResult> UpdatePatch(string id, [FromBody] JsonPatchDocument<EmployeeDetails> PartialUpdatedEmployee)
     {
-       
+
         var entity = await Employees.Find(x => x.Id == id).FirstOrDefaultAsync();
         if (entity == null)
         {
@@ -103,4 +103,3 @@ public class EmployeeController : ControllerBase
         return NoContent();
     }
 }
-
